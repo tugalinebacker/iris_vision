@@ -1,0 +1,12 @@
+item {
+ id: 1
+ name: 'ghost_net'
+}
+item {
+ id: 2
+ name: 'fish'
+}
+item {
+ id: 3
+ name: 'crab'
+}
