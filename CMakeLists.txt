@@ -67,7 +67,7 @@ catkin_install_python(PROGRAMS
 )
 
 catkin_install_python(PROGRAMS
-  src/Doppler.py
+  src/sensor_nav.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
