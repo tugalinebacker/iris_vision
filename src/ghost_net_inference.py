@@ -4,7 +4,12 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'    # Suppress TensorFlow logging (1)
 import rospy
-import tensorflow as tf
+try:
+    import tensorflow as tf
+except ImportError:
+    print("Unable to import TensorFlow. Check README for installation")
+    print("Advisable to have it on a virtual environment")
+    sys.exit(1)
 import cv2
 import numpy as np
 from std_msgs.msg import String
@@ -45,67 +50,74 @@ print('Done! Took {} seconds'.format(elapsed_time))
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
 
+class ghost_net:
+    def __init__(self):
+        self.camera_sub = rospy.Subscriber("/iris/proscilica_front/image_color", Image, self.camera_callback)
+        self.ghost_net_pub = rospy.Publisher("/iris/ghost_detection", Image)
+        self.bridge = CvBridge()
 
-
-def callback(img):
-    #rospy.loginfo("Topic /iris/proscilica_front/image_color detected!")
-    bridge = CvBridge()
-    ghost_detection = rospy.Publisher("/iris/ghost_detection", Image)
-
-    try:
-        cv_image = bridge.imgmsg_to_cv2(img, "bgr8") #converts ROS image to cv2
-    except CvBridgeError as e:
-        print(e)
-    
-    cv_image = cv2.resize(cv_image, (640,640))
-    #(rows,cols,channels) = cv_image.shape
-
-    input_tensor = tf.convert_to_tensor(cv_image)
-    input_tensor = input_tensor[tf.newaxis, ...]
-
-    detections = detect_fn(input_tensor)
-
-    # All outputs are batches tensors.
-    # Convert to numpy arrays, and take index [0] to remove the batch dimension.
-    # We're only interested in the first num_detections.
-    num_detections = int(detections.pop('num_detections'))
-    detections = {key: value[0, :num_detections].numpy()
-                    for key, value in detections.items()}
-    detections['num_detections'] = num_detections
-
-    # detection_classes should be ints.
-    detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
-
-    image_with_detections = cv_image.copy()
-
-    # SET MIN_SCORE_THRESH BASED ON YOU MINIMUM THRESHOLD FOR DETECTIONS
-    viz_utils.visualize_boxes_and_labels_on_image_array(
-            image_with_detections,
-            detections['detection_boxes'],
-            detections['detection_classes'],
-            detections['detection_scores'],
-            category_index,
-            use_normalized_coordinates=True,
-            max_boxes_to_draw=200,
-            min_score_thresh=MIN_CONF_THRESH,
-            agnostic_mode=False)
-
-
-    cv2.imshow("Inference in front camera", image_with_detections)
-    cv2.waitKey(3)
-
-    try:
-        ghost_detection.publish(bridge.cv2_to_imgmsg(image_with_detections, "bgr8")) #converts cv2 image to ROS
-    except CvBridgeError as e:
-        print(e)
         
+    def camera_callback(self, ros_image):
+        """Callback method to run the inference on the ROS image.
+        
+        Args:
+            ros_image (sensor_msgs/Image.msg): ROS type image of the IRIS front camera.
+        """
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(ros_image, "bgr8") #converts ROS image to cv2
+        except CvBridgeError as e:
+            print(e)
+        
+        cv_image = cv2.resize(cv_image, (640,640))
+
+        input_tensor = tf.convert_to_tensor(cv_image)
+        input_tensor = input_tensor[tf.newaxis, ...]
+
+        detections = detect_fn(input_tensor)
+
+        # All outputs are batch tensors.
+        # Convert to numpy arrays, and take index [0] to remove the batch dimension.
+        # We're only interested in the first num_detections.
+        num_detections = int(detections.pop('num_detections'))
+        detections = {key: value[0, :num_detections].numpy()
+                        for key, value in detections.items()}
+        detections['num_detections'] = num_detections
+
+        # detection_classes should be ints.
+        detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
+
+        image_with_detections = cv_image.copy()
+
+        # SET MIN_SCORE_THRESH BASED ON YOU MINIMUM THRESHOLD FOR DETECTIONS
+        viz_utils.visualize_boxes_and_labels_on_image_array(
+                image_with_detections,
+                detections['detection_boxes'],
+                detections['detection_classes'],
+                detections['detection_scores'],
+                category_index,
+                use_normalized_coordinates=True,
+                max_boxes_to_draw=200,
+                min_score_thresh=MIN_CONF_THRESH,
+                agnostic_mode=False)
+
+
+        cv2.imshow("Inference in front camera", image_with_detections)
+        cv2.waitKey(3)
+
+        try:
+            self.ghost_net_pub.publish(self.bridge.cv2_to_imgmsg(image_with_detections, "bgr8")) #converts cv2 image to ROS
+        except CvBridgeError as e:
+            print(e)
+
 
 
 def inference():
+    """ROS node main function.
+       Node name, subscriber, publisher defined here.
+    """
     rospy.init_node('ghost_net_inference', anonymous=True)
-    rospy.Subscriber("/iris/proscilica_front/image_color", Image, callback)
+    detector = ghost_net()
     try:
-        2
         rospy.spin()
     except KeyboardInterrupt:
         print("Inference node shutting down")
