@@ -57,7 +57,7 @@ catkin_python_setup()
 
 
 catkin_install_python(PROGRAMS
-  src/inference_mkII.py
+  src/ghost_net_inference.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
