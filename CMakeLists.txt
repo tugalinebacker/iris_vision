@@ -28,10 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   topic_tools
   visualization_msgs
-
-   #cola2_lib_ros
-   cola2_msgs
-   message_generation
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -47,8 +44,6 @@ catkin_package(
                  std_msgs
                  sensor_msgs
                  actionlib
-                 cola2_lib_ros
-                 cola2_msgs
   DEPENDS Boost
 
 )
@@ -62,7 +57,7 @@ catkin_python_setup()
 
 
 catkin_install_python(PROGRAMS
-  src/inference_mkII.py
+  src/ghost_net_inference.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

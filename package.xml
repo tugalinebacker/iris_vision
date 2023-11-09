@@ -58,6 +58,8 @@
   <build_export_depend>topic_tools</build_export_depend>
   <build_export_depend>visualization_msgs</build_export_depend>
 
+  <depend>iris_description</depend>
+
   <exec_depend>actionlib</exec_depend>
   <exec_depend>cmake_modules</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
@@ -78,10 +80,4 @@
   <exec_depend>tf</exec_depend>
   <exec_depend>topic_tools</exec_depend>
   <exec_depend>visualization_msgs</exec_depend>
-
-
-  <!-- COLA2 Dependencies -->
-  <depend>cola2_lib_ros</depend>
-  <depend>cola2_msgs</depend>
-  <depend>iris_description</depend>
 </package>

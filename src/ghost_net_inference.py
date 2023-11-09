@@ -102,7 +102,7 @@ def callback(img):
 
 
 def inference():
-    rospy.init_node('inference_mkII', anonymous=True)
+    rospy.init_node('ghost_net_inference', anonymous=True)
     rospy.Subscriber("/iris/proscilica_front/image_color", Image, callback)
     try:
         2
