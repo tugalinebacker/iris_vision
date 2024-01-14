@@ -90,6 +90,21 @@ def callback(img):
             min_score_thresh=MIN_CONF_THRESH,
             agnostic_mode=False)
 
+    image_height, image_width, _ = image_with_detections.shape
+    bounding_boxes = detections['detection_boxes']
+    confidence_scores = detections['detection_scores']
+    
+    # DETERMINE THE INDEX OF THE BOUDING BOX WITH THE HIGHEST SCORE
+    max_confidence_index = np.argmax(confidence_scores)
+    print("\nHighest confidence box index -> " + str(max_confidence_index))
+    
+    # VALUE OF THE BOUDING BOX WITH THE HIGHEST SCORE
+    highest_confidence_bbox_score = confidence_scores[max_confidence_index]
+    print("Highest confidence box score -> " + str(round(highest_confidence_bbox_score,2)))
+    
+    # COORDINATES OF THE BOUDING BOX WITH THE HIGHEST SCORE
+    highest_confidence_bbox_coordinates = bounding_boxes[max_confidence_index]
+    print("Highest confidence box coordinates -> " + str(highest_confidence_bbox_coordinates))
 
     cv2.imshow("Inference in front camera", image_with_detections)
     cv2.waitKey(3)
