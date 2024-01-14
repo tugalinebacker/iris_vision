@@ -7,7 +7,7 @@ import rospy
 import tensorflow as tf
 import cv2
 import numpy as np
-from std_msgs.msg import String
+from std_msgs.msg import Float32MultiArray, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -51,6 +51,7 @@ def callback(img):
     #rospy.loginfo("Topic /iris/proscilica_front/image_color detected!")
     bridge = CvBridge()
     ghost_detection = rospy.Publisher("/iris/ghost_detection", Image)
+    center_points = rospy.Publisher("/iris/image_center_points", Float32MultiArray)
 
     try:
         cv_image = bridge.imgmsg_to_cv2(img, "bgr8") #converts ROS image to cv2
@@ -90,27 +91,39 @@ def callback(img):
             min_score_thresh=MIN_CONF_THRESH,
             agnostic_mode=False)
 
+    #FRAME DIMENSIONS, BOUNDING BOXES COORDINATES, SCORES AND COORDINATES IN PIXELS
     image_height, image_width, _ = image_with_detections.shape
     bounding_boxes = detections['detection_boxes']
     confidence_scores = detections['detection_scores']
+    bounding_boxes_pixel = bounding_boxes * np.array([image_height, image_width, image_height, image_width])
     
-    # DETERMINE THE INDEX OF THE BOUDING BOX WITH THE HIGHEST SCORE
+    # DETERMINE THE INDEX OF THE BOUNDING BOX WITH THE HIGHEST SCORE
     max_confidence_index = np.argmax(confidence_scores)
-    print("\nHighest confidence box index -> " + str(max_confidence_index))
     
-    # VALUE OF THE BOUDING BOX WITH THE HIGHEST SCORE
+    # VALUE OF THE BOUNDING BOX WITH THE HIGHEST SCORE
     highest_confidence_bbox_score = confidence_scores[max_confidence_index]
     print("Highest confidence box score -> " + str(round(highest_confidence_bbox_score,2)))
     
-    # COORDINATES OF THE BOUDING BOX WITH THE HIGHEST SCORE
+    # COORDINATES OF THE BOUNDING BOX WITH THE HIGHEST SCORE
     highest_confidence_bbox_coordinates = bounding_boxes[max_confidence_index]
-    print("Highest confidence box coordinates -> " + str(highest_confidence_bbox_coordinates))
+    highest_confidence_bbox_coordinates_pixel = bounding_boxes_pixel[max_confidence_index]
+    print("Highest confidence box coordinates in pixels -> " + str(highest_confidence_bbox_coordinates_pixel))
+
+    # CENTER POINTS OF THE FRAME AND THE HIGHEST SCORING BOUNDING BOX
+    x_frame_center_point = image_width/2
+    y_frame_center_point = image_height/2
+    x_bbox_center_point = highest_confidence_bbox_coordinates_pixel[1]+highest_confidence_bbox_coordinates_pixel[3]/2
+    y_bbox_center_point = highest_confidence_bbox_coordinates_pixel[0]+highest_confidence_bbox_coordinates_pixel[2]/2
+    
+    center_points_coordinates = Float32MultiArray()
+    center_points_coordinates.data = [x_frame_center_point, y_frame_center_point, x_bbox_center_point, y_bbox_center_point]
 
     cv2.imshow("Inference in front camera", image_with_detections)
     cv2.waitKey(3)
 
     try:
         ghost_detection.publish(bridge.cv2_to_imgmsg(image_with_detections, "bgr8")) #converts cv2 image to ROS
+        center_points.publish(center_points_coordinates)
     except CvBridgeError as e:
         print(e)
         
