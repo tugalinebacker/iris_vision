@@ -90,10 +90,11 @@ def callback(img):
             min_score_thresh=MIN_CONF_THRESH,
             agnostic_mode=False)
 
-    #FRAME DIMENSIONS, BOUNDING BOXES COORDINATES, SCORES AND COORDINATES IN PIXELS
+    #FRAME DIMENSIONS, BOUNDING BOXES COORDINATES, SCORES, CLASSES AND COORDINATES IN PIXELS
     image_height, image_width, _ = image_with_detections.shape
     bounding_boxes = detections['detection_boxes']
     confidence_scores = detections['detection_scores']
+    classes = detections['detection_classes']
     bounding_boxes_pixel = bounding_boxes * np.array([image_height, image_width, image_height, image_width])
     
     # DETERMINE THE INDEX OF THE BOUNDING BOX WITH THE HIGHEST SCORE
@@ -102,21 +103,26 @@ def callback(img):
     # VALUE OF THE BOUNDING BOX WITH THE HIGHEST SCORE
     highest_confidence_bbox_score = confidence_scores[max_confidence_index]
     print("\nHighest confidence box score -> " + str(round(highest_confidence_bbox_score,2)))
-    
-    # COORDINATES OF THE BOUNDING BOX WITH THE HIGHEST SCORE
-    highest_confidence_bbox_coordinates = bounding_boxes[max_confidence_index]
-    highest_confidence_bbox_coordinates_pixel = bounding_boxes_pixel[max_confidence_index]
 
-    # COORDINATES OF THE CENTER POINTS OF THE FRAME AND HIGHEST SCORING BOUNDING BOX
-    x_frame_center_point = image_width/2
-    y_frame_center_point = image_height/2
-    x_bbox_center_point = highest_confidence_bbox_coordinates_pixel[1]+highest_confidence_bbox_coordinates_pixel[3]/2
-    y_bbox_center_point = highest_confidence_bbox_coordinates_pixel[0]+highest_confidence_bbox_coordinates_pixel[2]/2
-    print("Box center point coordinates -> ( " + str(round(x_bbox_center_point,2)) + ", " + str(round(y_bbox_center_point,2)) + ")")
-    
-    # STORE COORDINATES IN ROS MESSAGE
-    center_points_coordinates = Float32MultiArray()
-    center_points_coordinates.data = [x_frame_center_point, y_frame_center_point, x_bbox_center_point, y_bbox_center_point]
+    # DETERMINE CLASS OF HIGHEST SCORING BOUNDING BOX
+    highest_confidence_bbox_class = classes[max_confidence_index]
+    print("thiiiiiiiiiiis" + str(highest_confidence_bbox_class))
+    # DISCARD BOUNDING BOXES OF FISH AND CRAB
+    if highest_confidence_bbox_class == 1:
+        # COORDINATES OF THE BOUNDING BOX WITH THE HIGHEST SCORE
+        highest_confidence_bbox_coordinates = bounding_boxes[max_confidence_index]
+        highest_confidence_bbox_coordinates_pixel = bounding_boxes_pixel[max_confidence_index]
+
+        # COORDINATES OF THE CENTER POINTS OF THE FRAME AND HIGHEST SCORING BOUNDING BOX
+        x_frame_center_point = image_width/2
+        y_frame_center_point = image_height/2
+        x_bbox_center_point = highest_confidence_bbox_coordinates_pixel[1]+highest_confidence_bbox_coordinates_pixel[3]/2
+        y_bbox_center_point = highest_confidence_bbox_coordinates_pixel[0]+highest_confidence_bbox_coordinates_pixel[2]/2
+        print("Box center point coordinates -> ( " + str(round(x_bbox_center_point,2)) + ", " + str(round(y_bbox_center_point,2)) + ")")
+        
+        # STORE COORDINATES IN ROS MESSAGE
+        center_points_coordinates = Float32MultiArray()
+        center_points_coordinates.data = [x_frame_center_point, y_frame_center_point, x_bbox_center_point, y_bbox_center_point]
 
     cv2.imshow("Inference in front camera", image_with_detections)
     cv2.waitKey(3)
