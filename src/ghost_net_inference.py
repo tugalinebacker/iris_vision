@@ -51,7 +51,7 @@ category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABE
 def callback(img):
     bridge = CvBridge()
     ghost_detection = rospy.Publisher("/iris/proscilica_front/ghost_detection", Image)
-    center_points = rospy.Publisher("/iris/proscilica_front/image_center_points", Float32MultiArray)
+    detection_data = rospy.Publisher("/iris/proscilica_front/ghost_detection_data", Float32MultiArray)
 
     try:
         cv_image = bridge.imgmsg_to_cv2(img, "bgr8") #converts ROS image to cv2
@@ -106,7 +106,6 @@ def callback(img):
 
     # DETERMINE CLASS OF HIGHEST SCORING BOUNDING BOX
     highest_confidence_bbox_class = classes[max_confidence_index]
-    print("thiiiiiiiiiiis" + str(highest_confidence_bbox_class))
     # DISCARD BOUNDING BOXES OF FISH AND CRAB
     if highest_confidence_bbox_class == 1:
         # COORDINATES OF THE BOUNDING BOX WITH THE HIGHEST SCORE
@@ -120,16 +119,21 @@ def callback(img):
         y_bbox_center_point = highest_confidence_bbox_coordinates_pixel[0]+highest_confidence_bbox_coordinates_pixel[2]/2
         print("Box center point coordinates -> ( " + str(round(x_bbox_center_point,2)) + ", " + str(round(y_bbox_center_point,2)) + ")")
         
-        # STORE COORDINATES IN ROS MESSAGE
+        # SIZE OF THE BOUNDING BOX -> width in X, height in Y
+        bbox_width = highest_confidence_bbox_coordinates_pixel[3]-highest_confidence_bbox_coordinates_pixel[1]
+        bbox_height = highest_confidence_bbox_coordinates_pixel[2]-highest_confidence_bbox_coordinates_pixel[0]
+
+        # STORE COORDINATES and BBOX SIZE IN ROS MESSAGE
         center_points_coordinates = Float32MultiArray()
-        center_points_coordinates.data = [x_frame_center_point, y_frame_center_point, x_bbox_center_point, y_bbox_center_point]
+        center_points_coordinates.data = [x_frame_center_point, y_frame_center_point, x_bbox_center_point, y_bbox_center_point, 
+            image_width, image_height, bbox_width, bbox_height]
 
     cv2.imshow("Inference in front camera", image_with_detections)
     cv2.waitKey(3)
 
     try:
         ghost_detection.publish(bridge.cv2_to_imgmsg(image_with_detections, "bgr8")) #converts cv2 image to ROS
-        center_points.publish(center_points_coordinates)
+        detection_data.publish(center_points_coordinates)
     except CvBridgeError as e:
         print(e)
         
@@ -139,7 +143,6 @@ def inference():
     rospy.init_node('ghost_net_inference', anonymous=True)
     rospy.Subscriber("/iris/proscilica_front/image_color", Image, callback)
     try:
-        2
         rospy.spin()
     except KeyboardInterrupt:
         print("Inference node shutting down")
