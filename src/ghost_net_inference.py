@@ -7,7 +7,7 @@ import rospy
 import tensorflow as tf
 import cv2
 import numpy as np
-from std_msgs.msg import Float32MultiArray, String
+from std_msgs.msg import Bool, Float32MultiArray, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -29,7 +29,7 @@ mobilenet_CPU = 'exported-models/ghost_mkII_mobilenet_CPU/'
 dirname = os.path.dirname(__file__)
 PATH_TO_MODEL_DIR = os.path.join(dirname, efficientdet_d0)
 PATH_TO_LABELS = os.path.join(dirname, 'annotations/label_map.pbtxt')
-MIN_CONF_THRESH = 0.5
+MIN_CONF_THRESH = 0.6
 PATH_TO_SAVED_MODEL = os.path.join(dirname, efficientdet_d0 + 'saved_model')
 
 print('Loading model...', end='')
@@ -50,9 +50,10 @@ category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABE
 
 def callback(img):
     bridge = CvBridge()
-    ghost_detection = rospy.Publisher("/iris/proscilica_front/ghost_detection", Image)
-    detection_data = rospy.Publisher("/iris/proscilica_front/ghost_detection_data", Float32MultiArray)
     center_points_coordinates = Float32MultiArray()
+    captain_data = Bool()
+    captain = rospy.Publisher("/iris/captain/visual_detection", Bool)
+    detection_data = rospy.Publisher("/iris/proscilica_front/ghost_detection_data", Float32MultiArray)
 
     try:
         cv_image = bridge.imgmsg_to_cv2(img, "bgr8") #converts ROS image to cv2
@@ -105,6 +106,13 @@ def callback(img):
     highest_confidence_bbox_score = confidence_scores[max_confidence_index]
     print("\nHighest confidence box score -> " + str(round(highest_confidence_bbox_score,2)))
 
+    # DETECTION FLAG TO CAPTAIN NODE
+    if highest_confidence_bbox_score > MIN_CONF_THRESH:
+        captain_data.data = True
+    else:
+        captain_data.data = False
+    print("Captain = " + str(captain_data.data))
+
     # DETERMINE CLASS OF HIGHEST SCORING BOUNDING BOX
     highest_confidence_bbox_class = classes[max_confidence_index]
     # DISCARD BOUNDING BOXES OF FISH AND CRAB
@@ -132,8 +140,9 @@ def callback(img):
     cv2.waitKey(3)
 
     try:
-        ghost_detection.publish(bridge.cv2_to_imgmsg(image_with_detections, "bgr8")) #converts cv2 image to ROS
         detection_data.publish(center_points_coordinates)
+        captain.publish(captain_data)
+
     except CvBridgeError as e:
         print(e)
         
