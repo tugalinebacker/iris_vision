@@ -29,7 +29,7 @@ mobilenet_CPU = 'exported-models/ghost_mkII_mobilenet_CPU/'
 dirname = os.path.dirname(__file__)
 PATH_TO_MODEL_DIR = os.path.join(dirname, efficientdet_d0)
 PATH_TO_LABELS = os.path.join(dirname, 'annotations/label_map.pbtxt')
-MIN_CONF_THRESH = 0.6
+MIN_CONF_THRESH = 0.5
 PATH_TO_SAVED_MODEL = os.path.join(dirname, efficientdet_d0 + 'saved_model')
 
 print('Loading model...', end='')
@@ -52,6 +52,7 @@ def callback(img):
     bridge = CvBridge()
     ghost_detection = rospy.Publisher("/iris/proscilica_front/ghost_detection", Image)
     detection_data = rospy.Publisher("/iris/proscilica_front/ghost_detection_data", Float32MultiArray)
+    center_points_coordinates = Float32MultiArray()
 
     try:
         cv_image = bridge.imgmsg_to_cv2(img, "bgr8") #converts ROS image to cv2
@@ -124,7 +125,6 @@ def callback(img):
         bbox_height = highest_confidence_bbox_coordinates_pixel[2]-highest_confidence_bbox_coordinates_pixel[0]
 
         # STORE COORDINATES and BBOX SIZE IN ROS MESSAGE
-        center_points_coordinates = Float32MultiArray()
         center_points_coordinates.data = [x_frame_center_point, y_frame_center_point, x_bbox_center_point, y_bbox_center_point, 
             image_width, image_height, bbox_width, bbox_height]
 
