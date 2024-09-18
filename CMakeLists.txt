@@ -53,6 +53,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+set(PYTHON_EXECUTABLE /usr/bin/python3.8)
+
 catkin_python_setup()
 
 
@@ -62,20 +65,16 @@ catkin_install_python(PROGRAMS
 )
 
 catkin_install_python(PROGRAMS
-  src/sensor_nav.py
+  src/ghost_net_inference_yolo.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+catkin_install_python(PROGRAMS
+  src/ghost_net_inference_yolov5.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
-# add_executable(setpoints_pub_node2 src/setpoints_pub_iris2.cpp)  
-# add_dependencies(setpoints_pub_node2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(setpoints_pub_node2 ${catkin_LIBRARIES}) 
-
-# add_executable(setpoints_pub_node src/setpoints_pub_iris.cpp)
-# add_dependencies(setpoints_pub_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(setpoints_pub_node ${catkin_LIBRARIES}) 
-
-# add_executable(setpoints_mkII src/setpoints_mkII.cpp)
-# add_dependencies(setpoints_mkII ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(setpoints_mkII ${catkin_LIBRARIES})
-
+catkin_install_python(PROGRAMS
+  src/sensor_nav.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
